@@ -13,3 +13,7 @@ The README will also be used as a testing document
 `This text should be highlighted`
 _This text should be STRONG_
 *This text should be italicized*
+Numbers- 1234 should be colored
+"Double Quoted strings will be another color"
+'Single Quote will be another'
+
