@@ -37,5 +37,12 @@ fn main() {
         println!("No file path provided");
         process::exit(0);
     }
-    println!("File Path: {file_path}");    
+    println!("File Path: {file_path}"); 
+
+    let file_contents = fs::read_to_string(&file_path).unwrap_or_else(|err| {
+        eprintln!("ERROR: Could not read file contents to string {file_path}: {err}");
+        process::exit(1)
+    });
+
+    println!("File Contents: {file_contents}");
 }
