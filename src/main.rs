@@ -11,8 +11,6 @@ use std::{
 enum FormatTypes {
     Normal,
     Number,
-    Comment,
-    MultilineComment,
     SingleQuoteString,
     DoubleQuoteString,
     Strikethrough,
@@ -49,13 +47,37 @@ fn apply_styles(file_contents: String) -> String {
     styled_content = file_contents.lines().map(|row| {
         let mut previous_style_char = false;
         let mut styled_row: String = String::new();
+        // If our row is `Hello, World!`
+        // We should begin styling at the first '`', and end on the last '`'
         styled_row = row.chars().map(|character| {
-            if character == '~' {
-                if previous_style_char {
-                    println!("Well Hello there. All of this should be strikethrough.");             
-                }
-                previous_style_char = !previous_style_char;
+            match character {
+                '~' => {
+                    println!("Squiggle!");
+                },
+                '*' => {
+                    println!("Asterisk!");
+                },
+                '_' => {
+                    println!("UnderScore!");
+                },
+                '`' => {
+                    println!("BackTick!");
+                },
+                '\'' => {
+                    println!("Single Quote!");
+                },
+                '"' => {
+                    println!("Double Quote!");
+                },
+                _ => {
+                    if character.is_digit(10) {
+                        println!("Character was number");
+                    } else {
+                        println!("Character is normal");
+                    }
+                }, 
             }
+            
             character
         }).collect();
 
