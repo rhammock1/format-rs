@@ -5,6 +5,22 @@ use std::{
     process,
 };
 
+// use colorize::Color; // Something like this - No internet atm to confirm
+
+#[derive(Clone, Copy, Debug)]
+enum FormatTypes {
+    Normal,
+    Number,
+    Comment,
+    MultilineComment,
+    SingleQuoteString,
+    DoubleQuoteString,
+    Strikethrough,
+    Highlight,
+    Italicize,
+    Bold,
+}
+
 fn parse_args(arguments: &Vec<String>) -> Result<String, &'static str> {
     if arguments.len() == 1 {
         return Err("No arguments provided");
@@ -23,6 +39,30 @@ fn parse_args(arguments: &Vec<String>) -> Result<String, &'static str> {
     }
 
     Ok(file_path)
+}
+
+fn apply_styles(file_contents: String) -> String {
+    let mut styled_content = String::new();
+
+    // Loop through each line of the contents
+    // If we encounter a specific character, set a variable, keep going
+    styled_content = file_contents.lines().map(|row| {
+        let mut previous_style_char = false;
+        let mut styled_row: String = String::new();
+        styled_row = row.chars().map(|character| {
+            if character == '~' {
+                if previous_style_char {
+                    println!("Well Hello there. All of this should be strikethrough.");             
+                }
+                previous_style_char = !previous_style_char;
+            }
+            character
+        }).collect();
+
+        styled_row
+    }).collect();
+
+    styled_content
 }
 
 fn main() {
@@ -44,5 +84,7 @@ fn main() {
         process::exit(1)
     });
 
-    println!("File Contents: {file_contents}");
+    let styled_content: String = apply_styles(file_contents);
+    
+    println!("{styled_content}");
 }
