@@ -5,7 +5,7 @@ use std::{
     process,
 };
 
-// use colorize::Color; // Something like this - No internet atm to confirm
+use colored::Colorize; // Something like this - No internet atm to confirm
 
 #[derive(Clone, Copy, Debug)]
 enum FormatTypes {
