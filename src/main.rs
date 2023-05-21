@@ -40,6 +40,15 @@ fn parse_args(arguments: &Vec<String>) -> Result<String, &'static str> {
     Ok(file_path)
 }
 
+/// Reads the file line by line and applies styles to each character
+/// 
+/// # Arguments
+/// 
+/// * `line` - The line to apply styles to
+/// 
+/// # Returns
+/// 
+/// * `String` - The line with styles applied
 fn apply_styles(line: String) -> String {
     let mut styled_content = String::new();
     let mut previous_format_type = FormatType::Normal;
@@ -223,4 +232,47 @@ fn main() {
     }
 
     println!("{styled_content}");
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    // Newline is automatically added to the end of each line
+    #[test]
+    fn test_no_style() {
+        let line = "This is a test line";
+        let styled_line = apply_styles(line.to_string());
+
+        assert_eq!(format!("{}\n", line), styled_line);
+    }
+
+    #[test]
+    fn test_formatting() {
+        let bold_line = "This is a _test_ line";
+        let italic_line = "This is a *test* line";
+        let strikethrough_line = "This is a ~test~ line";
+        let highlight_line = "This is a `test` line";
+
+        let styled_bold_line = apply_styles(bold_line.to_string());
+        let styled_italic_line = apply_styles(italic_line.to_string());
+        let styled_strikethrough_line = apply_styles(strikethrough_line.to_string());
+        let styled_highlight_line = apply_styles(highlight_line.to_string());
+
+        assert_eq!(styled_bold_line, format!("This is a {t}{e}{s}{t} line\n", t="t".bold(), e="e".bold(), s="s".bold()));
+        assert_eq!(styled_italic_line, format!("This is a {t}{e}{s}{t} line\n", t="t".italic(), e="e".italic(), s="s".italic()));
+        assert_eq!(styled_strikethrough_line, format!("This is a {t}{e}{s}{t} line\n", t="t".strikethrough(), e="e".strikethrough(), s="s".strikethrough()));
+        assert_eq!(styled_highlight_line, format!("This is a {t}{e}{s}{t} line\n", t="t".on_truecolor(135, 28, 167), e="e".on_truecolor(135, 28, 167), s="s".on_truecolor(135, 28, 167)));
+
+        // FUTURE FEATURE
+        // let bold_italic_line = "This is a _*test*_ line";
+        // let bold_italic_strikethrough_line = "This is a _*~test~*_ line";
+    }
+
+    #[test]
+    fn has_format_chars_but_gets_no_style() {
+        let line = "* This is a test line";
+        let styled_line = apply_styles(line.to_string());
+        assert_eq!(styled_line, format!("{}\n", line));
+    }
 }
