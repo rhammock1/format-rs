@@ -7,6 +7,7 @@ use std::{
 };
 
 use colored::Colorize;
+use regex::Regex;
 
 #[derive(Clone, Copy, Debug)]
 enum FormatType {
