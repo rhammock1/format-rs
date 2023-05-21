@@ -1,14 +1,15 @@
 use std::{
+    io::{self, BufRead},
     env,
     fs,
     path,
     process,
 };
 
-use colored::Colorize; // Something like this - No internet atm to confirm
+use colored::Colorize;
 
 #[derive(Clone, Copy, Debug)]
-enum FormatTypes {
+enum FormatType {
     Normal,
     Number,
     SingleQuoteString,
@@ -27,62 +28,134 @@ fn parse_args(arguments: &Vec<String>) -> Result<String, &'static str> {
     if arguments.len() > 2 {
         return Err("Too many arguments provided.");
     }
-    let mut file_path = String::new();
 
-    let path = path::Path::new(&arguments[1]);
-    if path.exists() {
-        file_path = arguments[1].clone().to_string();
+    let file_path = if path::Path::new(&arguments[1]).exists() {
+        arguments[1].clone().to_string()
     } else {
         return Err("Path does not exist");
-    }
+    };
 
     Ok(file_path)
 }
 
-fn apply_styles(file_contents: String) -> String {
+fn apply_styles(line: String) -> String {
     let mut styled_content = String::new();
 
-    // Loop through each line of the contents
-    // If we encounter a specific character, set a variable, keep going
-    styled_content = file_contents.lines().map(|row| {
-        let mut previous_style_char = false;
-        let mut styled_row: String = String::new();
-        // If our row is `Hello, World!`
-        // We should begin styling at the first '`', and end on the last '`'
-        styled_row = row.chars().map(|character| {
-            match character {
-                '~' => {
-                    println!("Squiggle!");
-                },
-                '*' => {
-                    println!("Asterisk!");
-                },
-                '_' => {
-                    println!("UnderScore!");
-                },
-                '`' => {
-                    println!("BackTick!");
-                },
-                '\'' => {
-                    println!("Single Quote!");
-                },
-                '"' => {
-                    println!("Double Quote!");
-                },
-                _ => {
-                    if character.is_digit(10) {
-                        println!("Character was number");
-                    } else {
-                        println!("Character is normal");
-                    }
-                }, 
-            }
-            
-            character
-        }).collect();
+    let mut previous_format_type = FormatType::Normal;
 
-        styled_row
-    }).collect();
+    for character in line.chars() {
+        match character {
+            c if c.is_digit(10) => {
+                styled_content.push_str(&character.to_string().cyan().to_string());
+                previous_format_type = FormatType::Number;
+            },
+            '.' => {
+                match previous_format_type {
+                    FormatType::Number => {
+                        styled_content.push_str(&character.to_string().cyan().to_string());
+                    },
+                    _ => {
+                        styled_content.push_str(&character.to_string());
+                    }
+                }
+            },
+            '~' => {
+                match previous_format_type {
+                    FormatType::Strikethrough => {
+                        previous_format_type = FormatType::Normal;
+                    },
+                    _ => {
+                        previous_format_type = FormatType::Strikethrough;
+                    },
+                }
+            },
+            '`' => {
+                match previous_format_type {
+                    FormatType::Highlight => {
+                        previous_format_type = FormatType::Normal;
+                    },
+                    _ => {
+                        previous_format_type = FormatType::Highlight;
+                    },
+                }
+            },
+            '\'' => {
+                match previous_format_type {
+                    FormatType::SingleQuoteString => {
+                        previous_format_type = FormatType::Normal;
+                        styled_content.push_str(&character.to_string().yellow().to_string());
+                    },
+                    _ => {
+                        previous_format_type = FormatType::SingleQuoteString;
+                        styled_content.push_str(&character.to_string().yellow().to_string());
+                    },
+                }
+            },
+            '"' => {
+                match previous_format_type {
+                    FormatType::DoubleQuoteString => {
+                        previous_format_type = FormatType::Normal;
+                        styled_content.push_str(&character.to_string().bright_red().to_string());
+
+                    },
+                    _ => {
+                        previous_format_type = FormatType::DoubleQuoteString;
+                        styled_content.push_str(&character.to_string().bright_red().to_string());
+                    },
+                }
+            },
+            '*' => {
+                match previous_format_type {
+                    FormatType::Italicize => {
+                        previous_format_type = FormatType::Normal;
+                    },
+                    _ => {
+                        previous_format_type = FormatType::Italicize;
+                    },
+                }
+            },
+            '_' => {
+                match previous_format_type {
+                    FormatType::Bold => {
+                        previous_format_type = FormatType::Normal;
+                    },
+                    _ => {
+                        previous_format_type = FormatType::Bold;
+                    },
+                }
+            },
+            _ => {
+                match previous_format_type {
+                    FormatType::Highlight => {
+                        // TODO add a check if terminal supports truecolor
+                        styled_content.push_str(&character.to_string().on_truecolor(135, 28, 167).to_string());
+                    },
+                    FormatType::SingleQuoteString => {
+                        styled_content.push_str(&character.to_string().yellow().to_string());
+                    },
+                    FormatType::DoubleQuoteString => {
+                        styled_content.push_str(&character.to_string().bright_red().to_string());
+                    },
+                    FormatType::Italicize => {
+                        styled_content.push_str(&character.to_string().italic().to_string());
+                    },
+                    FormatType::Bold => {
+                        styled_content.push_str(&character.to_string().bold().to_string());
+                    },
+                    FormatType::Strikethrough => {
+                        styled_content.push_str(&character.to_string().strikethrough().to_string());
+                    },
+                    _ => {
+                        // No need for match arm to check FormatType::Number since the
+                        // match arm above handles checking if the char is a digit
+                        styled_content.push_str(&character.to_string());
+                    },
+                }
+            },
+        }
+    }
+
+    styled_content.push_str("\n");
 
     styled_content
 }
@@ -97,16 +170,30 @@ fn main() {
 
     if file_path == "" {
         println!("No file path provided");
-        process::exit(0);
+        process::exit(1);
     }
     println!("File Path: {file_path}"); 
 
-    let file_contents = fs::read_to_string(&file_path).unwrap_or_else(|err| {
-        eprintln!("ERROR: Could not read file contents to string {file_path}: {err}");
-        process::exit(1)
-    });
+    let file = match fs::File::open(&file_path) {
+        Ok(file) => file,
+        Err(err) => {
+            eprintln!("ERROR: Could not open file {file_path}: {err}");
+            process::exit(1)
+        },
+    };
 
-    let styled_content: String = apply_styles(file_contents);
-    
+    let reader = io::BufReader::new(file);
+
+    let mut styled_content = String::new();
+    for line in reader.lines() {
+        match line {
+            Ok(line) => styled_content.push_str(&apply_styles(line)),
+            Err(err) => {
+                eprintln!("ERROR: Could not read line: {err}");
+                process::exit(1)
+            }
+        }
+    }
+
     println!("{styled_content}");
 }
